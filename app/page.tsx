@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
+import type { Block, TransactionResponse } from "ethers"; // ✅ Import kiểu
+
 import { Card, CardContent } from "@/components/ui/card";
 
 const MONAD_RPC = "https://testnet-rpc.monad.xyz";
@@ -34,19 +36,33 @@ export default function DashboardZoo() {
 
         const contractTxMap: Record<string, number> = {};
 
-        blocks.filter(Boolean).forEach((block) => {
-          block!.transactions.forEach((tx: any) => {
-            if (tx.to) {
-              contractTxMap[tx.to] = (contractTxMap[tx.to] || 0) + 1;
-            }
-          });
-        });
+      blocks.filter(Boolean).forEach((block) => {
+  const typedBlock = block as Block;
+
+  const txs = typedBlock.transactions;
+  if (
+    Array.isArray(txs) &&
+    typeof txs[0] === "object" &&
+    txs[0] !== null &&
+    "hash" in txs[0] &&
+    "to" in txs[0]
+  ) {
+    (txs as TransactionResponse[]).forEach((tx) => {
+      if (tx.to) {
+        contractTxMap[tx.to] = (contractTxMap[tx.to] || 0) + 1;
+      }
+    });
+  }
+});
+
+
+
 
         const sorted = Object.entries(contractTxMap)
           .sort((a, b) => b[1] - a[1])
           .slice(0, monanimals.length);
 
-        setTxCounts(sorted.map(([_, count]) => count));
+        setTxCounts(sorted.map(([, count]) => count)); // ✅ không còn "_"
         setTxAddresses(sorted.map(([address]) => address));
       } catch (err) {
         console.error("Lỗi khi fetch dữ liệu:", err);
@@ -83,6 +99,8 @@ export default function DashboardZoo() {
     </div>
   );
 }
+
+
 
 
 
